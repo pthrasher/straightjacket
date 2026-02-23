@@ -31,8 +31,12 @@ src/                          # TypeScript source
 default-presets/              # Built-in preset Dockerfiles (embedded into binary at compile)
   full-stack/Dockerfile
   full-stack-playwright/Dockerfile
+  prep.sh                     # Reference host-side prep script (Phase 0 spec for Phase 1)
+  entrypoint.sh               # Reference container entrypoint (Phase 0 spec for Phase 1)
 sandbox/                      # Legacy reference implementation (gitignored, not part of the build)
 ```
+
+`prep.sh` and `entrypoint.sh` are not part of the compiled binary. They document the host-side and container-side flows that `sj` will implement in TypeScript during Phase 1, and are used for manual Podman testing in the meantime.
 
 ## Key Architecture Decisions
 
