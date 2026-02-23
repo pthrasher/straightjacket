@@ -33,7 +33,7 @@ case "$AGENT" in
     export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
     # Optional: claude update (controlled by autoUpdate config)
     # claude update
-    claude --allow-dangerously-skip-permissions --dangerously-skip-permissions
+    exec claude --allow-dangerously-skip-permissions --dangerously-skip-permissions
     ;;
   codex)
     exec codex --dangerously-bypass-approvals-and-sandbox

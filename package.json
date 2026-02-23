@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build --compile src/index.ts --outfile dist/sj",
+    "build": "bun build --compile src/index.ts --outfile dist/sj --external chokidar",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:integration": "SJ_INTEGRATION_TESTS=1 bun test"
@@ -15,5 +15,10 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "c12": "^4.0.0-beta.3",
+    "citty": "^0.2.1",
+    "defu": "^6.1.4"
   }
 }
