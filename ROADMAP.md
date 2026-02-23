@@ -6,6 +6,21 @@ A standalone CLI tool (`sj`) distributed as a single bundled Bun executable that
 
 See [REQUIREMENTS.md](REQUIREMENTS.md) for detailed technical requirements.
 
+## Phase 0: Preset Dockerfiles
+
+Build the two default preset Dockerfiles properly before writing any tooling:
+
+- `full-stack` and `full-stack-playwright` Dockerfiles with multi-stage builds
+- Proper stage separation: system deps → user-space tools → agent installation
+- Build args for all version pins (Node, Python, etc.) and UID/GID
+- GID collision handling (macOS GID 20)
+- Agent binaries installed to `/usr/local/bin` with sandboxuser write access
+- `/workdirs/` mount point prepared
+- Validate manually with Podman before moving on — confirm UID mapping is correct, agents launch properly, etc.
+- Nail down the entrypoint script: what it does, in what order, and how it varies per agent (see Entrypoint section in REQUIREMENTS.md)
+
+Reference: `sandbox/Dockerfile` contains the current working (but unstructured) implementation.
+
 ## Phase 1: Foundation (v1)
 
 - CLI skeleton: `sj shell`, `sj claude`, `sj codex`, `sj init`, bare `sj` with default agent
@@ -26,6 +41,9 @@ See [REQUIREMENTS.md](REQUIREMENTS.md) for detailed technical requirements.
 - Network access allowed
 - `full-stack` and `full-stack-playwright` built-in presets (embedded via `bun build --compile` with `{ type: "file" }` imports)
 - Preset resolution: per-repo `.sj/presets/` → user presets → built-in presets
+- CLI parsing via citty, layered config via c12 (both UnJS)
+- Unit tests (config resolution, preset resolution, image naming, entrypoint generation, etc.)
+- Integration tests gated behind `SJ_INTEGRATION_TESTS=1` (full container lifecycle with Podman)
 
 ## Phase 2: Scaffolding
 

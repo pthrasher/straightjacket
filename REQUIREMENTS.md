@@ -22,6 +22,13 @@ straightjacket/
 └── ...
 ```
 
+## Dependencies
+
+- **citty** (UnJS) — CLI argument parsing, subcommand routing.
+- **c12** (UnJS) — Layered config loading and merging. Handles the resolution order: CLI overrides → per-repo config → global config → defaults.
+
+Parsed CLI args from citty are passed as c12's `overrides` parameter (highest priority layer).
+
 ## CLI Interface
 
 - `sj shell` — drop into a bash shell in the container (default command if no default agent configured).
@@ -124,7 +131,7 @@ Built-in presets:
 - Derive the image tag from the preset name + a content hash so rebuilds only happen when needed.
 - Repos sharing the same preset share the same image (no redundant builds).
 - Per-repo custom presets get a distinct image: `<parent-dir>-<project-dir>-<preset-name>`. If this conflicts, error and let the user fix the preset name.
-- The workdir path inside the container is derived from the project being mounted, not hardcoded.
+- The workdir inside the container follows the `/workdirs/<project-name>` pattern (e.g. `/workdirs/my-app`). This is important because images may be shared across multiple projects using the same preset, and agents like Claude Code and Codex use the project root path to track per-project state. A consistent, unique path per project ensures each repo gets its own project context within the agent.
 - Force rebuild via `--rebuild` flag.
 
 ### Dockerfile Standards
@@ -227,3 +234,33 @@ Each agent has different runtime needs handled by the entrypoint:
 - **Codex:** `--dangerously-bypass-approvals-and-sandbox` flag (already inside a sandbox).
 - **Shell:** plain `bash`, no agent-specific setup.
 - Common to all: proper `HOME`, `USER`, and `PATH` setup.
+
+## Testing
+
+Tests use `bun test` (Bun's built-in test runner, compatible with Jest/expect API).
+
+### Unit Tests
+
+Unit tests cover pure logic that doesn't require Podman or a running container:
+
+- **Config resolution** — verify layered merging: CLI flags override per-repo, per-repo overrides global, global overrides defaults. Test edge cases like missing files, malformed JSON, XDG_CONFIG_HOME variations.
+- **Preset resolution** — verify priority order: per-repo `.sj/presets/` > user presets > built-in presets. Test fallback behavior when presets are missing.
+- **Image naming/tagging** — verify content-hash derivation, shared images for same preset, distinct names for per-repo custom presets, collision detection.
+- **UID/GID handling** — verify GID collision detection (macOS GID 20), group reuse logic.
+- **Entrypoint generation** — verify the generated entrypoint script contains correct steps for each agent type, respects config flags (gitConfigSync, autoUpdate, preRunScripts).
+- **TTY env capture** — verify the correct environment variables are captured from the invoking shell.
+- **Git config sync logic** — verify copy behavior, skip-when-disabled behavior.
+- **CLI arg parsing** — verify subcommand routing, flag parsing, --rebuild flag, bare `sj` default behavior.
+
+### Integration Tests
+
+Integration tests require Podman and exercise the full container lifecycle. These are slower and may be gated behind an environment flag (e.g. `SJ_INTEGRATION_TESTS=1`):
+
+- **Build and run** — build an image from the `full-stack` preset, run a container, verify the agent binary exists at `/usr/local/bin/`, verify the workdir is correctly set.
+- **Harness-config mount** — verify the harness-config directory is mounted as `$HOME`, files written inside persist after container exit.
+- **SSH agent forwarding** — verify `SSH_AUTH_SOCK` is accessible inside the container and can list keys.
+- **Git config sync** — verify host `.gitconfig` is copied into the container's `$HOME`, verify commit signing config is present.
+- **TTY passthrough** — verify forwarded env vars are set inside the container.
+- **Security defaults** — verify capabilities are dropped, no-new-privileges is set.
+- **Rebuild** — verify `--rebuild` triggers a fresh image build even when the content hash hasn't changed.
+- **First-run bootstrapping** — verify harness-config directory is created when it doesn't exist.
