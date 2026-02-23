@@ -21,7 +21,7 @@ describe("generateEntrypoint", () => {
   test("sets up USER and PATH environment", () => {
     const script = generateEntrypoint("shell", withConfig());
     expect(script).toContain('export USER="${USER:-sandboxuser}"');
-    expect(script).toContain('export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"');
+    expect(script).toContain('export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"');
   });
 
   test("includes SSH agent check", () => {

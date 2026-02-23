@@ -18,7 +18,7 @@ export function generateEntrypoint(agent: AgentName, config: SjConfig): string {
     "",
     '# ── Environment setup ──',
     'export USER="${USER:-sandboxuser}"',
-    'export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"',
+    'export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"',
     "",
     "# ── SSH agent ──",
     'if [ -z "${SSH_AUTH_SOCK:-}" ]; then',

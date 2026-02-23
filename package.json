@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build --compile src/index.ts --outfile dist/sj --external chokidar",
+    "install-local": "bun run build && cp dist/sj ~/.local/bin/sj",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:integration": "SJ_INTEGRATION_TESTS=1 bun test"

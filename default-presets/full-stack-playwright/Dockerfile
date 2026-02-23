@@ -81,6 +81,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/*
 
+# ── Bun ──────────────────────────────────────────────────────────────
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash
+
 # ── GitHub CLI ──────────────────────────────────────────────────────
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
       | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \

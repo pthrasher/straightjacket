@@ -18,8 +18,9 @@ import {
 import {
   bootstrapHarnessConfig,
   syncGitConfig,
+  syncClaudeSessionFiles,
   captureTtyEnvArgs,
-  sshForwardingArgs,
+  setupSshForwarding,
   credentialEnvArgs,
   getUidGid,
 } from "./prep.ts";
@@ -32,7 +33,7 @@ import { buildPodmanRunArgs, execPodman } from "./podman.ts";
 async function runAgent(
   agent: AgentName,
   cliOverrides: Partial<SjConfig>,
-): Promise<never> {
+): Promise<void> {
   const projectDir = process.cwd();
   const projectName = basename(projectDir);
 
@@ -48,6 +49,7 @@ async function runAgent(
   // 4. Bootstrap harness-config
   const agentConfigOverride = config.agents[agent]?.configPath;
   const harnessHome = harnessConfigDir(agent, agentConfigOverride);
+  const workdir = containerWorkdir(projectName);
   bootstrapHarnessConfig(harnessHome);
 
   // 5. Git config sync
@@ -55,12 +57,14 @@ async function runAgent(
     syncGitConfig(harnessHome);
   }
 
+  // 5b. Claude session file sync
+  syncClaudeSessionFiles(projectDir, harnessHome, workdir);
+
   // 6. Image build
   const { path: dockerfilePath, cleanup: dockerfileCleanup } =
     await materializeDockerfile(preset);
   const hash = await dockerfileContentHash(preset.dockerfilePath);
   const ref = imageRef(preset, projectDir, hash);
-  const workdir = containerWorkdir(projectName);
 
   try {
     await buildImageIfNeeded({
@@ -75,12 +79,15 @@ async function runAgent(
     await dockerfileCleanup?.();
   }
 
-  // 7. Generate entrypoint
+  // 7. SSH agent forwarding (may start a tunnel on macOS)
+  const sshForwarding = await setupSshForwarding();
+
+  // 8. Generate entrypoint
   const entrypointContent = generateEntrypoint(agent, config);
   const entrypointPath = await writeEntrypointTempFile(entrypointContent);
 
   try {
-    // 8. Assemble and exec podman
+    // 9. Assemble and exec podman
     const args = buildPodmanRunArgs({
       imageRef: ref,
       projectDir,
@@ -88,7 +95,7 @@ async function runAgent(
       harnessHome,
       entrypointPath,
       agent,
-      sshArgs: sshForwardingArgs(),
+      sshArgs: sshForwarding.podmanArgs,
       ttyEnvs: captureTtyEnvArgs(),
       credEnvs: credentialEnvArgs(),
     });
@@ -96,6 +103,7 @@ async function runAgent(
     const exitCode = await execPodman(args);
     process.exit(exitCode);
   } finally {
+    sshForwarding.cleanup?.();
     await cleanupEntrypointTempFile(entrypointPath);
   }
 }
