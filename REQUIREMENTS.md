@@ -148,19 +148,29 @@ Built-in presets:
 - Network access is allowed (v1). Network restrictions (host/IP firewalling) are a future consideration.
 - The tool owns the entrypoint logic (see Entrypoint below).
 
-## Entrypoint
+## Host-Side Prep (before `podman run`)
+
+`sj` performs these steps on the host before launching the container:
+
+1. **First-run bootstrapping** — create the harness-config directory for the agent if it doesn't exist. Ensure XDG subdirectories (`.config/`, `.cache/`, `.local/share/`) exist inside it.
+2. **Git config sync** — if `gitConfigSync` is enabled (default), copy host `~/.gitconfig` and `~/.config/git/` into the harness-config directory. One-way overwrite, host → sandbox.
+3. **Image build** — build the image if it doesn't exist or if the content hash has changed. Force rebuild via `--rebuild`.
+4. **TTY env capture** — capture `TERM`, `COLORTERM`, `TERM_PROGRAM`, `TERM_PROGRAM_VERSION`, `LANG`, `LC_*`, `COLUMNS`, `LINES` from the invoking shell to pass via `--env`.
+5. **SSH agent** — detect `SSH_AUTH_SOCK` and set up the bind mount + env var.
+6. **Credential passthrough** — forward API keys and tokens via `--env`.
+
+## Entrypoint (inside container)
 
 `sj` generates and manages the container entrypoint. There is no hand-maintained start script in presets. The entrypoint handles:
 
-1. **Git config sync** — copy host `.gitconfig` and `~/.config/git/` into `$HOME` if `gitConfigSync` is enabled.
-2. **Environment setup** — set `HOME`, `USER`, `PATH`, and forwarded TTY variables.
-3. **SSH agent** — ensure `SSH_AUTH_SOCK` is accessible.
-4. **Pre-run scripts** — execute any user-configured `preRunScripts`.
-5. **Agent auto-update** — if `autoUpdate` is enabled, run the agent's update command.
-6. **Agent launch** — invoke the requested agent with appropriate flags:
+1. **Environment setup** — set `USER`, `PATH`.
+2. **SSH agent** — verify `SSH_AUTH_SOCK` is accessible, warn if not.
+3. **Pre-run scripts** — execute any user-configured `preRunScripts`.
+4. **Agent auto-update** — if `autoUpdate` is enabled, run the agent's update command.
+5. **Agent launch** — invoke the requested agent with appropriate flags:
    - **Claude Code:** agent-specific env vars, then `claude`.
    - **Codex:** `codex --dangerously-bypass-approvals-and-sandbox`.
-   - **Shell:** `bash`.
+   - **Shell:** `zsh`.
 
 ## UID/GID Alignment
 
