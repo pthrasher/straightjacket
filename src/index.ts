@@ -1,9 +1,10 @@
 import { defineCommand, runMain } from "citty";
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import type { AgentName, LaunchMode, SjConfig } from "./types.ts";
-import { resolveConfig } from "./config.ts";
+import { resolveConfig, repoConfigDefaults } from "./config.ts";
 import { resolvePreset } from "./presets.ts";
-import { harnessConfigDir, containerWorkdir } from "./paths.ts";
+import { harnessConfigDir, containerWorkdir, repoConfigFile } from "./paths.ts";
 import {
   dockerfileContentHash,
   imageRef,
@@ -173,6 +174,38 @@ const shellCommand = defineCommand({
   },
 });
 
+const repoConfigCommand = defineCommand({
+  meta: {
+    name: "repo-config",
+    description: "Create .sj/config.json with all defaults pre-filled",
+  },
+  args: {
+    force: {
+      type: "boolean",
+      description: "Overwrite existing .sj/config.json",
+    },
+  },
+  run({ args }) {
+    const projectDir = process.cwd();
+    const configPath = repoConfigFile(projectDir);
+
+    if (existsSync(configPath) && !args.force) {
+      console.error(
+        `${configPath} already exists. Use --force to overwrite.`,
+      );
+      process.exit(1);
+    }
+
+    mkdirSync(dirname(configPath), { recursive: true });
+    const defaults = repoConfigDefaults();
+    writeFileSync(
+      configPath,
+      JSON.stringify(defaults, null, 2) + "\n",
+    );
+    console.log(`Created ${configPath}`);
+  },
+});
+
 const initCommand = defineCommand({
   meta: {
     name: "init",
@@ -201,6 +234,7 @@ const main = defineCommand({
     shell: shellCommand,
     claude: agentCommand("claude"),
     codex: agentCommand("codex"),
+    "repo-config": repoConfigCommand,
     init: initCommand,
   },
   async run({ args }) {

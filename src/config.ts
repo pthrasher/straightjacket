@@ -15,6 +15,15 @@ export const CONFIG_DEFAULTS: SjConfig = {
 };
 
 /**
+ * Build the config object written by `sj repo-config`.
+ * Excludes transient/empty fields that aren't useful in a persisted config.
+ */
+export function repoConfigDefaults(): Record<string, unknown> {
+  const { rebuild, agents, ...rest } = CONFIG_DEFAULTS;
+  return rest;
+}
+
+/**
  * Load and merge config from all layers.
  * Priority: cliOverrides > per-repo .sj/config.json > global $XDG_CONFIG_HOME/sj/config.json > defaults
  */
