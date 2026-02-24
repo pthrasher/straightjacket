@@ -1,5 +1,6 @@
 {
   "description": "Ghidra reverse engineering framework (built from source)",
+  "pathDirs": ["/opt/ghidra/support"],
   "args": {
     "version": {
       "description": "Ghidra version to build",

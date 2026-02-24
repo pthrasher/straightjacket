@@ -283,6 +283,55 @@ describe("generateDockerfile", () => {
     expect(dockerfile).toContain("claude.ai/install.sh");
   });
 
+  test("emits ENV PATH with pathDirs from units", () => {
+    const units = [
+      makeUnit({
+        name: "rust",
+        manifest: { pathDirs: ["/opt/cargo/bin"] },
+      }),
+      makeUnit({
+        name: "jadx",
+        manifest: { pathDirs: ["/opt/jadx/bin"] },
+      }),
+    ];
+
+    const dockerfile = generateDockerfile(units);
+
+    expect(dockerfile).toContain("ENV PATH=/opt/cargo/bin:/opt/jadx/bin:$PATH");
+
+    // Should be in the finalize section
+    const finalizeIdx = dockerfile.indexOf("# === Finalize");
+    const envPathIdx = dockerfile.indexOf("ENV PATH=");
+    expect(envPathIdx).toBeGreaterThan(finalizeIdx);
+  });
+
+  test("deduplicates pathDirs", () => {
+    const units = [
+      makeUnit({
+        name: "unit-a",
+        manifest: { pathDirs: ["/opt/cargo/bin", "/opt/jadx/bin"] },
+      }),
+      makeUnit({
+        name: "unit-b",
+        manifest: { pathDirs: ["/opt/cargo/bin"] },
+      }),
+    ];
+
+    const dockerfile = generateDockerfile(units);
+
+    const envLine = dockerfile.split("\n").find((l) => l.startsWith("ENV PATH="));
+    expect(envLine).toBe("ENV PATH=/opt/cargo/bin:/opt/jadx/bin:$PATH");
+  });
+
+  test("omits ENV PATH when no pathDirs", () => {
+    const units = [
+      makeUnit({ name: "dev-utils", manifest: { apt: ["git"] } }),
+    ];
+
+    const dockerfile = generateDockerfile(units);
+    expect(dockerfile).not.toContain("ENV PATH=");
+  });
+
   test("bootstrap packages are in first RUN", () => {
     const units = [makeUnit({ name: "dev-utils", manifest: { apt: ["git"] } })];
     const dockerfile = generateDockerfile(units);

@@ -1,5 +1,6 @@
 {
   "description": "Rust via rustup",
+  "pathDirs": ["/opt/cargo/bin"],
   "args": {
     "version": {
       "description": "Rust toolchain version",

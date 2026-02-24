@@ -1,5 +1,6 @@
 {
   "description": "JADX — Dex to Java decompiler",
+  "pathDirs": ["/opt/jadx/bin"],
   "args": {
     "version": {
       "description": "JADX release version",

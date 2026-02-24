@@ -19,6 +19,7 @@ export interface UnitManifest {
   apt?: string[];
   aptRepos?: UnitAptRepo[];
   pip?: string[];
+  pathDirs?: string[];
   args?: Record<string, UnitArgDef>;
   requires?: string[];
 }

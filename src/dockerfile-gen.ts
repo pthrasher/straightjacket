@@ -191,15 +191,26 @@ export function generateDockerfile(units: ResolvedUnit[]): string {
   sections.push(agentsLines.join("\n"));
 
   // ── 5. Finalize ─────────────────────────────────────────────────────
-  sections.push(
-    [
-      "# === Finalize ===",
-      "ARG SANDBOX_WORKDIR=/workdirs/project",
-      "WORKDIR ${SANDBOX_WORKDIR}",
-      "USER sandboxuser",
-      'CMD ["bash"]',
-    ].join("\n"),
+  const finalizeLines = [
+    "# === Finalize ===",
+    "ARG SANDBOX_WORKDIR=/workdirs/project",
+  ];
+
+  // Prepend unit pathDirs to PATH
+  const allPathDirs = dedupe(units.flatMap((u) => u.manifest.pathDirs ?? []));
+  if (allPathDirs.length > 0) {
+    finalizeLines.push(
+      `ENV PATH=${allPathDirs.join(":")}:$PATH`,
+    );
+  }
+
+  finalizeLines.push(
+    "WORKDIR ${SANDBOX_WORKDIR}",
+    "USER sandboxuser",
+    'CMD ["bash"]',
   );
+
+  sections.push(finalizeLines.join("\n"));
 
   return sections.join("\n\n") + "\n";
 }

@@ -1,3 +1,4 @@
 {
-  "description": ".NET SDK 8.0 with ILSpy CLI"
+  "description": ".NET SDK 8.0 with ILSpy CLI",
+  "pathDirs": ["/usr/local/dotnet-tools"]
 }
