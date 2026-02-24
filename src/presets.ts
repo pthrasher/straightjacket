@@ -9,10 +9,13 @@ import { repoPresetsDir, userPresetsDir } from "./paths.ts";
 import fullStack from "../default-presets/full-stack/Dockerfile" with { type: "file" };
 // @ts-expect-error — Bun-specific import attribute; not understood by tsc
 import fullStackPlaywright from "../default-presets/full-stack-playwright/Dockerfile" with { type: "file" };
+// @ts-expect-error — Bun-specific import attribute; not understood by tsc
+import il2cppRe from "../default-presets/il2cpp-re/Dockerfile" with { type: "file" };
 
 export const BUILT_IN_PRESETS: Record<string, string> = {
   "full-stack": fullStack,
   "full-stack-playwright": fullStackPlaywright,
+  "il2cpp-re": il2cppRe,
 };
 
 /**

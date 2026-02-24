@@ -31,6 +31,10 @@ describe("BUILT_IN_PRESETS", () => {
     expect(BUILT_IN_PRESETS["full-stack-playwright"]).toBeDefined();
   });
 
+  test("contains il2cpp-re", () => {
+    expect(BUILT_IN_PRESETS["il2cpp-re"]).toBeDefined();
+  });
+
   test("embedded paths are readable", async () => {
     const content = await Bun.file(BUILT_IN_PRESETS["full-stack"]!).text();
     expect(content).toContain("FROM ubuntu:24.04");
@@ -54,6 +58,15 @@ describe("resolvePreset", () => {
 
     const result = resolvePreset("full-stack-playwright", projectDir);
     expect(result.name).toBe("full-stack-playwright");
+    expect(result.origin).toBe("built-in");
+  });
+
+  test("resolves built-in il2cpp-re", () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    const result = resolvePreset("il2cpp-re", projectDir);
+    expect(result.name).toBe("il2cpp-re");
     expect(result.origin).toBe("built-in");
   });
 
