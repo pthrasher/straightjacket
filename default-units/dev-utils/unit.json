@@ -3,6 +3,7 @@
   "apt": [
     "file",
     "less",
+    "ncurses-term",
     "zip",
     "unzip",
     "tmux",
