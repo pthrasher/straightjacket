@@ -8,8 +8,9 @@ import {
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { homedir } from "node:os";
+import { parseTOML, stringifyTOML } from "confbox/toml";
 
 export interface SshForwardingResult {
   podmanArgs: string[];
@@ -133,6 +134,197 @@ export function syncClaudeSessionFiles(
 
   mkdirSync(destDir, { recursive: true });
   syncNewFiles(srcDir, destDir, projectDir, containerWorkdir);
+}
+
+/**
+ * Parse a Codex config.toml string and build a mapping of host project
+ * paths to container paths (/workdirs/<basename>).
+ *
+ * Paths already under /workdirs/ are kept as-is (already container paths).
+ */
+export function buildCodexPathMapping(
+  hostConfigToml: string,
+): Map<string, string> {
+  const mapping = new Map<string, string>();
+  const parsed = parseTOML(hostConfigToml) as Record<string, unknown>;
+  const projects = parsed.projects as Record<string, unknown> | undefined;
+  if (!projects) return mapping;
+
+  for (const hostPath of Object.keys(projects)) {
+    if (hostPath.startsWith("/workdirs/")) {
+      // Already a container path — identity mapping
+      mapping.set(hostPath, hostPath);
+    } else {
+      mapping.set(hostPath, `/workdirs/${basename(hostPath)}`);
+    }
+  }
+  return mapping;
+}
+
+/**
+ * Merge a rewritten host Codex config with an existing sandbox config.
+ * Sandbox wins for any key it already has; host fills in gaps.
+ *
+ * For the `projects` table, merge is per-path: sandbox paths win,
+ * host paths are added if they don't exist in sandbox.
+ */
+export function mergeCodexConfig(
+  hostConfig: Record<string, unknown>,
+  sandboxConfig: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...hostConfig };
+
+  // Top-level scalars: sandbox wins
+  for (const [key, value] of Object.entries(sandboxConfig)) {
+    if (key === "projects" || key === "notice" || key === "features") {
+      continue; // handled below
+    }
+    merged[key] = value;
+  }
+
+  // Projects: per-path merge, sandbox wins
+  const hostProjects = (hostConfig.projects ?? {}) as Record<string, unknown>;
+  const sandboxProjects = (sandboxConfig.projects ?? {}) as Record<string, unknown>;
+  merged.projects = { ...hostProjects, ...sandboxProjects };
+
+  // notice / features: deep merge, sandbox wins
+  for (const section of ["notice", "features"] as const) {
+    const hostSection = (hostConfig[section] ?? {}) as Record<string, unknown>;
+    const sandboxSection = (sandboxConfig[section] ?? {}) as Record<string, unknown>;
+    if (Object.keys(hostSection).length > 0 || Object.keys(sandboxSection).length > 0) {
+      merged[section] = { ...hostSection, ...sandboxSection };
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Apply all path mappings to a string.
+ * Replaces longer paths first to avoid partial matches
+ * (e.g., /Users/x/src/lumyx/app before /Users/x/src/lumyx).
+ */
+function applyPathMapping(content: string, mapping: Map<string, string>): string {
+  // Sort by length descending so longer paths are replaced first
+  const sorted = [...mapping.entries()].sort(
+    (a, b) => b[0].length - a[0].length,
+  );
+  let result = content;
+  for (const [hostPath, containerPath] of sorted) {
+    result = result.replaceAll(hostPath, containerPath);
+  }
+  return result;
+}
+
+/**
+ * Recursively copy session files from src to dest, skipping files that
+ * already exist at the destination. Applies all path mappings to content.
+ */
+function syncCodexSessionFiles(
+  srcDir: string,
+  destDir: string,
+  mapping: Map<string, string>,
+): void {
+  const entries = readdirSync(srcDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = join(srcDir, entry.name);
+    const destPath = join(destDir, entry.name);
+
+    if (entry.isDirectory()) {
+      mkdirSync(destPath, { recursive: true });
+      syncCodexSessionFiles(srcPath, destPath, mapping);
+    } else if (!existsSync(destPath)) {
+      const content = readFileSync(srcPath, "utf8");
+      writeFileSync(destPath, applyPathMapping(content, mapping));
+    }
+  }
+}
+
+/**
+ * Sync Codex config, auth, and sessions from host ~/.codex/ into
+ * the harness-config's ~/.codex/ directory.
+ *
+ * - auth.json: copied if host last_refresh is newer than sandbox
+ * - config.toml: project paths rewritten, merged with sandbox (sandbox wins)
+ * - sessions: copied incrementally, all paths rewritten
+ */
+export function syncCodexConfig(harnessHome: string): void {
+  const hostCodexDir = join(homedir(), ".codex");
+  if (!existsSync(hostCodexDir)) return;
+
+  const destCodexDir = join(harnessHome, ".codex");
+  mkdirSync(destCodexDir, { recursive: true });
+
+  // (a) Build path mapping from host config.toml
+  const hostConfigPath = join(hostCodexDir, "config.toml");
+  let mapping = new Map<string, string>();
+  let hostConfigToml = "";
+  if (existsSync(hostConfigPath)) {
+    hostConfigToml = readFileSync(hostConfigPath, "utf8");
+    mapping = buildCodexPathMapping(hostConfigToml);
+  }
+
+  // (b) Sync auth.json if host has fresher tokens
+  const hostAuthPath = join(hostCodexDir, "auth.json");
+  const destAuthPath = join(destCodexDir, "auth.json");
+  if (existsSync(hostAuthPath)) {
+    try {
+      const hostAuth = JSON.parse(readFileSync(hostAuthPath, "utf8"));
+      let shouldCopy = true;
+      if (existsSync(destAuthPath)) {
+        const destAuth = JSON.parse(readFileSync(destAuthPath, "utf8"));
+        if (destAuth.last_refresh && hostAuth.last_refresh &&
+            destAuth.last_refresh >= hostAuth.last_refresh) {
+          shouldCopy = false;
+        }
+      }
+      if (shouldCopy) {
+        copyFileSync(hostAuthPath, destAuthPath);
+      }
+    } catch {
+      // Malformed JSON — copy anyway as a fallback
+      copyFileSync(hostAuthPath, destAuthPath);
+    }
+  }
+
+  // (c) Merge config.toml
+  if (hostConfigToml) {
+    const hostParsed = parseTOML(hostConfigToml) as Record<string, unknown>;
+
+    // Rewrite project keys in host config
+    const hostProjects = (hostParsed.projects ?? {}) as Record<string, unknown>;
+    const rewrittenProjects: Record<string, unknown> = {};
+    for (const [hostPath, value] of Object.entries(hostProjects)) {
+      const containerPath = mapping.get(hostPath) ?? `/workdirs/${basename(hostPath)}`;
+      rewrittenProjects[containerPath] = value;
+    }
+    const rewrittenHost = { ...hostParsed, projects: rewrittenProjects };
+
+    // Load existing sandbox config if present
+    const destConfigPath = join(destCodexDir, "config.toml");
+    let sandboxConfig: Record<string, unknown> = {};
+    if (existsSync(destConfigPath)) {
+      try {
+        sandboxConfig = parseTOML(
+          readFileSync(destConfigPath, "utf8"),
+        ) as Record<string, unknown>;
+      } catch {
+        // Malformed TOML — start fresh
+      }
+    }
+
+    const merged = mergeCodexConfig(rewrittenHost, sandboxConfig);
+    writeFileSync(destConfigPath, stringifyTOML(merged));
+  }
+
+  // (d) Sync sessions
+  const hostSessionsDir = join(hostCodexDir, "sessions");
+  if (existsSync(hostSessionsDir) && mapping.size > 0) {
+    const destSessionsDir = join(destCodexDir, "sessions");
+    mkdirSync(destSessionsDir, { recursive: true });
+    syncCodexSessionFiles(hostSessionsDir, destSessionsDir, mapping);
+  }
 }
 
 /**

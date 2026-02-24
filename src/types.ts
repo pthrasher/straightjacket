@@ -58,6 +58,8 @@ export interface SjConfig {
   autoUpdate: boolean;
   gitConfigSync: boolean;
   githubCli: boolean;
+  sshForwarding: boolean;
+  codexConfigSync: boolean;
   preRunScripts: string[];
   rebuild: boolean;
   agents: Record<string, { configPath?: string }>;

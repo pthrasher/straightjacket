@@ -22,6 +22,7 @@ import {
   syncGitConfig,
   syncGhConfig,
   syncClaudeSessionFiles,
+  syncCodexConfig,
   captureTtyEnvArgs,
   setupSshForwarding,
   credentialEnvArgs,
@@ -69,8 +70,15 @@ async function runAgent(
     syncGhConfig(harnessHome);
   }
 
-  // 5b. Claude session file sync
-  syncClaudeSessionFiles(projectDir, harnessHome, workdir);
+  // 5b. Claude session file sync (only when launching claude)
+  if (harnessAgent === "claude") {
+    syncClaudeSessionFiles(projectDir, harnessHome, workdir);
+  }
+
+  // 5c. Codex config sync
+  if (config.codexConfigSync && harnessAgent === "codex") {
+    syncCodexConfig(harnessHome);
+  }
 
   // 6. Image build
   const hash = dockerfileContentHash(dockerfileContent);
@@ -92,7 +100,9 @@ async function runAgent(
   }
 
   // 7. SSH agent forwarding (may start a tunnel on macOS)
-  const sshForwarding = await setupSshForwarding();
+  const sshForwarding = config.sshForwarding
+    ? await setupSshForwarding()
+    : { podmanArgs: [] as string[], cleanup: null };
 
   // 8. Generate entrypoint
   const entrypointContent = generateEntrypoint(mode, config);
