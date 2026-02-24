@@ -61,6 +61,19 @@ export function syncGitConfig(harnessHome: string): void {
 }
 
 /**
+ * Sync host GitHub CLI config into the harness-config directory.
+ * One-way copy: host overwrites the sandboxed copy.
+ */
+export function syncGhConfig(harnessHome: string): void {
+  const hostGhConfig = join(homedir(), ".config", "gh");
+  if (existsSync(hostGhConfig)) {
+    const dest = join(harnessHome, ".config", "gh");
+    mkdirSync(dest, { recursive: true });
+    cpSync(hostGhConfig, dest, { recursive: true });
+  }
+}
+
+/**
  * Slugify a path the way Claude Code does for ~/.claude/projects/:
  * replace every `/` with `-`.
  */

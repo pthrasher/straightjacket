@@ -2,3 +2,6 @@ sandbox/
 node_modules/
 bun.lock
 dist/
+build/
+macos/
+*.bun-build

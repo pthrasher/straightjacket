@@ -1,6 +1,6 @@
 import { defineCommand, runMain } from "citty";
 import { basename } from "node:path";
-import type { AgentName, SjConfig } from "./types.ts";
+import type { AgentName, LaunchMode, SjConfig } from "./types.ts";
 import { resolveConfig } from "./config.ts";
 import { resolvePreset } from "./presets.ts";
 import { harnessConfigDir, containerWorkdir } from "./paths.ts";
@@ -18,6 +18,7 @@ import {
 import {
   bootstrapHarnessConfig,
   syncGitConfig,
+  syncGhConfig,
   syncClaudeSessionFiles,
   captureTtyEnvArgs,
   setupSshForwarding,
@@ -27,11 +28,14 @@ import {
 import { buildPodmanRunArgs, execPodman } from "./podman.ts";
 
 /**
- * Run the full container lifecycle for a given agent.
- * This is the core orchestration flow matching prep.sh.
+ * Run the full container lifecycle.
+ *
+ * @param mode - What to exec: "claude", "codex", or "shell" (zsh)
+ * @param harnessAgent - Which agent's harness-config to mount as $HOME
  */
 async function runAgent(
-  agent: AgentName,
+  mode: LaunchMode,
+  harnessAgent: AgentName,
   cliOverrides: Partial<SjConfig>,
 ): Promise<void> {
   const projectDir = process.cwd();
@@ -47,14 +51,19 @@ async function runAgent(
   const { uid, gid } = getUidGid();
 
   // 4. Bootstrap harness-config
-  const agentConfigOverride = config.agents[agent]?.configPath;
-  const harnessHome = harnessConfigDir(agent, agentConfigOverride);
+  const agentConfigOverride = config.agents[harnessAgent]?.configPath;
+  const harnessHome = harnessConfigDir(harnessAgent, agentConfigOverride);
   const workdir = containerWorkdir(projectName);
   bootstrapHarnessConfig(harnessHome);
 
   // 5. Git config sync
   if (config.gitConfigSync) {
     syncGitConfig(harnessHome);
+  }
+
+  // 5a. GitHub CLI config sync
+  if (config.githubCli) {
+    syncGhConfig(harnessHome);
   }
 
   // 5b. Claude session file sync
@@ -83,7 +92,7 @@ async function runAgent(
   const sshForwarding = await setupSshForwarding();
 
   // 8. Generate entrypoint
-  const entrypointContent = generateEntrypoint(agent, config);
+  const entrypointContent = generateEntrypoint(mode, config);
   const entrypointPath = await writeEntrypointTempFile(entrypointContent);
 
   try {
@@ -94,7 +103,7 @@ async function runAgent(
       containerWorkdir: workdir,
       harnessHome,
       entrypointPath,
-      agent,
+      agent: mode,
       sshArgs: sshForwarding.podmanArgs,
       ttyEnvs: captureTtyEnvArgs(),
       credEnvs: credentialEnvArgs(),
@@ -113,7 +122,6 @@ async function runAgent(
  */
 function agentCommand(agent: AgentName) {
   const descriptions: Record<AgentName, string> = {
-    shell: "Drop into a zsh shell in the container",
     claude: "Launch Claude Code in a container for the current repo",
     codex: "Launch Codex in a container for the current repo",
   };
@@ -130,12 +138,40 @@ function agentCommand(agent: AgentName) {
       },
     },
     async run({ args }) {
-      await runAgent(agent, {
+      await runAgent(agent, agent, {
         rebuild: args.rebuild || undefined,
       });
     },
   });
 }
+
+const shellCommand = defineCommand({
+  meta: {
+    name: "shell",
+    description: "Drop into a zsh shell in an agent's container",
+  },
+  args: {
+    rebuild: {
+      type: "boolean",
+      description: "Force rebuild the image",
+    },
+    agent: {
+      type: "positional",
+      description: "Agent harness to use (claude or codex)",
+      required: false,
+    },
+  },
+  async run({ args }) {
+    const projectDir = process.cwd();
+    const config = await resolveConfig(projectDir, {
+      rebuild: args.rebuild || undefined,
+    });
+    const target: AgentName = (args.agent as AgentName) || config.defaultAgent;
+    await runAgent("shell", target, {
+      rebuild: args.rebuild || undefined,
+    });
+  },
+});
 
 const initCommand = defineCommand({
   meta: {
@@ -162,7 +198,7 @@ const main = defineCommand({
     },
   },
   subCommands: {
-    shell: agentCommand("shell"),
+    shell: shellCommand,
     claude: agentCommand("claude"),
     codex: agentCommand("codex"),
     init: initCommand,
@@ -174,7 +210,7 @@ const main = defineCommand({
       rebuild: args.rebuild || undefined,
     });
 
-    await runAgent(config.defaultAgent, {
+    await runAgent(config.defaultAgent, config.defaultAgent, {
       rebuild: args.rebuild || undefined,
     });
   },

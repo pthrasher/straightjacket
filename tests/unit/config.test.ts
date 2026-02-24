@@ -29,10 +29,11 @@ describe("resolveConfig", () => {
     mkdirSync(projectDir, { recursive: true });
 
     const config = await resolveConfig(projectDir);
-    expect(config.defaultAgent).toBe("shell");
+    expect(config.defaultAgent).toBe("claude");
     expect(config.defaultPreset).toBe("full-stack");
     expect(config.autoUpdate).toBe(false);
     expect(config.gitConfigSync).toBe(true);
+    expect(config.githubCli).toBe(false);
     expect(config.preRunScripts).toEqual([]);
     expect(config.rebuild).toBe(false);
     expect(config.agents).toEqual({});
@@ -102,9 +103,9 @@ describe("resolveConfig", () => {
 
     // CLI override wins
     const config = await resolveConfig(projectDir, {
-      defaultAgent: "shell",
+      defaultAgent: "claude",
     });
-    expect(config.defaultAgent).toBe("shell");
+    expect(config.defaultAgent).toBe("claude");
   });
 
   test("undefined CLI overrides do not clobber real values", async () => {
@@ -164,7 +165,7 @@ describe("resolveConfig", () => {
 
     const config = await resolveConfig(projectDir);
     // Falls back to defaults
-    expect(config.defaultAgent).toBe("shell");
+    expect(config.defaultAgent).toBe("claude");
   });
 
   test("handles missing .sj directory gracefully", async () => {
@@ -173,7 +174,7 @@ describe("resolveConfig", () => {
     // No .sj/ directory at all
 
     const config = await resolveConfig(projectDir);
-    expect(config.defaultAgent).toBe("shell");
+    expect(config.defaultAgent).toBe("claude");
   });
 
   test("rebuild CLI override works", async () => {
@@ -182,5 +183,18 @@ describe("resolveConfig", () => {
 
     const config = await resolveConfig(projectDir, { rebuild: true });
     expect(config.rebuild).toBe(true);
+  });
+
+  test("githubCli defaults to false and can be overridden", async () => {
+    const projectDir = join(tmpDir, "project");
+    mkdirSync(projectDir, { recursive: true });
+
+    // Default is false
+    const defaultConfig = await resolveConfig(projectDir);
+    expect(defaultConfig.githubCli).toBe(false);
+
+    // CLI override
+    const overridden = await resolveConfig(projectDir, { githubCli: true });
+    expect(overridden.githubCli).toBe(true);
   });
 });

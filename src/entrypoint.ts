@@ -1,7 +1,7 @@
 import { mkdtemp, writeFile, unlink, rmdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentName, SjConfig } from "./types.ts";
+import type { LaunchMode, SjConfig } from "./types.ts";
 
 function shellQuote(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
@@ -11,7 +11,7 @@ function shellQuote(s: string): string {
  * Generate entrypoint shell script matching default-presets/entrypoint.sh.
  * Parameterized by agent and config.
  */
-export function generateEntrypoint(agent: AgentName, config: SjConfig): string {
+export function generateEntrypoint(agent: LaunchMode, config: SjConfig): string {
   const lines: string[] = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
@@ -28,6 +28,16 @@ export function generateEntrypoint(agent: AgentName, config: SjConfig): string {
     "fi",
     "",
   ];
+
+  // GitHub CLI auth
+  if (config.githubCli) {
+    lines.push("# ── GitHub CLI auth ──");
+    lines.push('if ! gh auth status >/dev/null 2>&1; then');
+    lines.push('  echo "GitHub CLI is not authenticated. Running gh auth login..."');
+    lines.push("  gh auth login");
+    lines.push("fi");
+    lines.push("");
+  }
 
   // Pre-run scripts
   if (config.preRunScripts.length > 0) {

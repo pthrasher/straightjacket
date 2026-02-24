@@ -1,4 +1,5 @@
-export type AgentName = "claude" | "codex" | "shell";
+export type AgentName = "claude" | "codex";
+export type LaunchMode = AgentName | "shell";
 
 export interface PresetSource {
   name: string;
@@ -11,6 +12,7 @@ export interface SjConfig {
   defaultPreset: string;
   autoUpdate: boolean;
   gitConfigSync: boolean;
+  githubCli: boolean;
   preRunScripts: string[];
   rebuild: boolean;
   agents: Record<string, { configPath?: string }>;

@@ -4,10 +4,11 @@ import type { SjConfig } from "./types.ts";
 import { sjGlobalConfigFile } from "./paths.ts";
 
 export const CONFIG_DEFAULTS: SjConfig = {
-  defaultAgent: "shell",
+  defaultAgent: "claude",
   defaultPreset: "full-stack",
   autoUpdate: false,
   gitConfigSync: true,
+  githubCli: false,
   preRunScripts: [],
   rebuild: false,
   agents: {},

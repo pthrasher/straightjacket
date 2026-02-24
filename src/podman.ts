@@ -1,4 +1,4 @@
-import type { AgentName } from "./types.ts";
+import type { LaunchMode } from "./types.ts";
 
 export interface PodmanRunOpts {
   imageRef: string;
@@ -6,7 +6,7 @@ export interface PodmanRunOpts {
   containerWorkdir: string;
   harnessHome: string;
   entrypointPath: string;
-  agent: AgentName;
+  agent: LaunchMode;
   sshArgs: string[];
   ttyEnvs: string[];
   credEnvs: string[];

@@ -111,6 +111,26 @@ describe("generateEntrypoint", () => {
     expect(script).toContain("bash -c 'echo '\\''hello world'\\'''");
   });
 
+  test("includes gh auth block when githubCli is true", () => {
+    const script = generateEntrypoint(
+      "shell",
+      withConfig({ githubCli: true }),
+    );
+    expect(script).toContain("# ── GitHub CLI auth ──");
+    expect(script).toContain("gh auth status");
+    expect(script).toContain("gh auth login");
+  });
+
+  test("omits gh auth block when githubCli is false", () => {
+    const script = generateEntrypoint(
+      "shell",
+      withConfig({ githubCli: false }),
+    );
+    expect(script).not.toContain("GitHub CLI auth");
+    expect(script).not.toContain("gh auth status");
+    expect(script).not.toContain("gh auth login");
+  });
+
   test("ends with newline", () => {
     const script = generateEntrypoint("shell", withConfig());
     expect(script).toEndWith("\n");
