@@ -206,7 +206,7 @@ describeIf("integration: security defaults", () => {
 
 describeIf("integration: entrypoint generation", () => {
   test("generated entrypoint for shell is valid bash", async () => {
-    const entrypoint = generateEntrypoint("shell", CONFIG_DEFAULTS);
+    const entrypoint = generateEntrypoint({ agent: "shell", config: CONFIG_DEFAULTS, units: [] });
     const path = await writeEntrypointTempFile(entrypoint);
     try {
       const check = Bun.spawnSync(["bash", "-n", path], {
@@ -220,11 +220,11 @@ describeIf("integration: entrypoint generation", () => {
   });
 
   test("generated entrypoint for claude with all options is valid bash", async () => {
-    const entrypoint = generateEntrypoint("claude", {
+    const entrypoint = generateEntrypoint({ agent: "claude", config: {
       ...CONFIG_DEFAULTS,
       autoUpdate: true,
       preRunScripts: ["echo hello", "npm install"],
-    });
+    }, units: [] });
     const path = await writeEntrypointTempFile(entrypoint);
     try {
       const check = Bun.spawnSync(["bash", "-n", path], {

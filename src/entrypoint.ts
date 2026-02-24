@@ -1,24 +1,44 @@
 import { mkdtemp, writeFile, unlink, rmdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
-import type { LaunchMode, SjConfig } from "./types.ts";
+import type { LaunchMode, SjConfig, ResolvedUnit } from "./types.ts";
 
 function shellQuote(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
 /**
- * Generate entrypoint shell script matching default-presets/entrypoint.sh.
- * Parameterized by agent and config.
+ * Deduplicate an array of strings while preserving order.
  */
-export function generateEntrypoint(agent: LaunchMode, config: SjConfig): string {
+function dedupe(items: string[]): string[] {
+  return [...new Set(items)];
+}
+
+interface EntrypointOptions {
+  agent: LaunchMode;
+  config: SjConfig;
+  units: ResolvedUnit[];
+}
+
+/**
+ * Generate entrypoint shell script matching default-presets/entrypoint.sh.
+ * Parameterized by agent, config, and resolved units.
+ */
+export function generateEntrypoint(opts: EntrypointOptions): string {
+  const { agent, config, units } = opts;
+
+  // Build PATH: unit pathDirs + standard dirs
+  const unitPathDirs = dedupe(units.flatMap((u) => u.manifest.pathDirs ?? []));
+  const standardDirs = ["$HOME/.local/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"];
+  const allPathDirs = [...unitPathDirs, ...standardDirs].join(":");
+
   const lines: string[] = [
     "#!/usr/bin/env bash",
     "set -euo pipefail",
     "",
     '# ── Environment setup ──',
     'export USER="${USER:-sandboxuser}"',
-    'export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"',
+    `export PATH="${allPathDirs}:$PATH"`,
     "",
     "# ── SSH agent ──",
     'if [ -z "${SSH_AUTH_SOCK:-}" ]; then',

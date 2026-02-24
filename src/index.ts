@@ -105,7 +105,7 @@ async function runAgent(
     : { podmanArgs: [] as string[], cleanup: null };
 
   // 8. Generate entrypoint
-  const entrypointContent = generateEntrypoint(mode, config);
+  const entrypointContent = generateEntrypoint({ agent: mode, config, units: preset.units });
   const entrypointPath = await writeEntrypointTempFile(entrypointContent);
 
   try {
