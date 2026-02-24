@@ -22,14 +22,17 @@ INSTALL_PATH="${INSTALL_DIR}/sj"
 echo "Building to ${BUILD_DIR}..."
 bun build --compile "${PROJECT_DIR}/src/index.ts" --outfile "$OUTFILE" --external chokidar
 
+echo "Codesigning with JIT entitlements..."
+codesign --entitlements "$ENTITLEMENTS" --sign - --force "$OUTFILE"
+
+# ditto preserves code-signing attributes that cp fails to copy. This
+# allows us to codesign in the temp dir before copying. We could codesign
+# in place at ~/.local/bin, but ditto makes that unnecessary.
 echo "Installing to ${INSTALL_PATH}..."
 mkdir -p "$INSTALL_DIR"
-cp "$OUTFILE" "$INSTALL_PATH"
+ditto "$OUTFILE" "$INSTALL_PATH"
 
 echo "Cleaning up build directory..."
 rm -rf "$BUILD_DIR"
-
-echo "Codesigning with JIT entitlements..."
-codesign --entitlements "$ENTITLEMENTS" --sign - --force "$INSTALL_PATH"
 
 echo "Done. $(${INSTALL_PATH} --version 2>/dev/null || echo 'sj installed')"

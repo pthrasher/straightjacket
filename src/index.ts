@@ -203,6 +203,7 @@ const repoConfigCommand = defineCommand({
       JSON.stringify(defaults, null, 2) + "\n",
     );
     console.log(`Created ${configPath}`);
+    process.exit(0);
   },
 });
 
