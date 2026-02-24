@@ -7,8 +7,7 @@
     "dev": "bun run src/index.ts",
     "clean": "rm dist/sj; rm -rf dist || true",
     "build": "bun clean && bun build --compile src/index.ts --outfile build/sj --external chokidar",
-    "macbuild": "bun build --compile src/index.ts --outfile macos/sj --external chokidar",
-    "install-local": "bun run macbuild && cp macos/sj ~/.local/bin/sj",
+    "install-local": "bash scripts/mac-install.sh",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:integration": "SJ_INTEGRATION_TESTS=1 bun test"
