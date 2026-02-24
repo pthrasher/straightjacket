@@ -1,0 +1,9 @@
+{
+  "description": "Rust via rustup",
+  "args": {
+    "version": {
+      "description": "Rust toolchain version",
+      "default": "stable"
+    }
+  }
+}

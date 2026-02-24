@@ -1,0 +1,13 @@
+{
+  "description": "GitHub CLI (gh)",
+  "apt": [
+    "gh"
+  ],
+  "aptRepos": [
+    {
+      "name": "github-cli",
+      "gpgKeyUrl": "https://cli.github.com/packages/githubcli-archive-keyring.gpg",
+      "sourceLine": "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/github-cli.gpg] https://cli.github.com/packages stable main"
+    }
+  ]
+}

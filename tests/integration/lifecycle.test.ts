@@ -7,8 +7,9 @@ import { describe, test, expect, beforeAll } from "bun:test";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { dockerfileContentHash, imageExists } from "../../src/image.ts";
-import { resolvePreset } from "../../src/presets.ts";
+import { dockerfileContentHash, imageExists, writeGeneratedDockerfile } from "../../src/image.ts";
+import { loadPreset } from "../../src/preset-resolution.ts";
+import { generateDockerfile } from "../../src/dockerfile-gen.ts";
 import { bootstrapHarnessConfig } from "../../src/prep.ts";
 import {
   generateEntrypoint,
@@ -27,8 +28,9 @@ const WORKDIR = "/workdirs/test-project";
  * Reuses existing image if content hash matches.
  */
 async function ensureFullStackImage(): Promise<string> {
-  const preset = resolvePreset("full-stack", "/tmp/dummy");
-  const hash = await dockerfileContentHash(preset.dockerfilePath);
+  const preset = loadPreset("full-stack", "/tmp/dummy");
+  const dockerfileContent = generateDockerfile(preset.units);
+  const hash = dockerfileContentHash(dockerfileContent);
   const ref = `sj-full-stack:${hash}`;
 
   if (imageExists(ref)) {
@@ -37,7 +39,7 @@ async function ensureFullStackImage(): Promise<string> {
 
   const uid = process.getuid!();
   const gid = process.getgid!();
-  const emptyCtx = mkdtempSync(join(tmpdir(), "sj-build-ctx-"));
+  const { path: dockerfilePath, cleanup } = await writeGeneratedDockerfile(dockerfileContent);
 
   try {
     const proc = Bun.spawnSync(
@@ -47,9 +49,9 @@ async function ensureFullStackImage(): Promise<string> {
         "--build-arg", `SANDBOX_UID=${uid}`,
         "--build-arg", `SANDBOX_GID=${gid}`,
         "--build-arg", `SANDBOX_WORKDIR=${WORKDIR}`,
-        "-f", preset.dockerfilePath,
+        "-f", dockerfilePath,
         "-t", ref,
-        emptyCtx,
+        ".",
       ],
       { stdin: "inherit", stdout: "inherit", stderr: "inherit" },
     );
@@ -60,7 +62,7 @@ async function ensureFullStackImage(): Promise<string> {
       );
     }
   } finally {
-    rmSync(emptyCtx, { recursive: true, force: true });
+    await cleanup();
   }
 
   return ref;
@@ -264,9 +266,10 @@ describeIf("integration: rebuild", () => {
     "--rebuild forces a fresh build even when image exists",
     async () => {
       const ref = await ensureFullStackImage();
-      const preset = resolvePreset("full-stack", "/tmp/dummy");
+      const preset = loadPreset("full-stack", "/tmp/dummy");
+      const dockerfileContent = generateDockerfile(preset.units);
       const rebuildTag = `${ref}-rebuild-test`;
-      const emptyCtx = mkdtempSync(join(tmpdir(), "sj-rebuild-ctx-"));
+      const { path: dockerfilePath, cleanup } = await writeGeneratedDockerfile(dockerfileContent);
 
       try {
         const proc = Bun.spawnSync(
@@ -275,15 +278,15 @@ describeIf("integration: rebuild", () => {
             "--build-arg", `SANDBOX_UID=${process.getuid!()}`,
             "--build-arg", `SANDBOX_GID=${process.getgid!()}`,
             "--build-arg", `SANDBOX_WORKDIR=${WORKDIR}`,
-            "-f", preset.dockerfilePath,
+            "-f", dockerfilePath,
             "-t", rebuildTag,
-            emptyCtx,
+            ".",
           ],
           { stdin: "inherit", stdout: "inherit", stderr: "inherit" },
         );
         expect(proc.success).toBe(true);
       } finally {
-        rmSync(emptyCtx, { recursive: true, force: true });
+        await cleanup();
         Bun.spawnSync(["podman", "rmi", rebuildTag]);
       }
     },

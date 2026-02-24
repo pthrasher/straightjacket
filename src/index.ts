@@ -3,12 +3,13 @@ import { basename, dirname } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import type { AgentName, LaunchMode, SjConfig } from "./types.ts";
 import { resolveConfig, repoConfigDefaults } from "./config.ts";
-import { resolvePreset } from "./presets.ts";
+import { loadPreset } from "./preset-resolution.ts";
+import { generateDockerfile } from "./dockerfile-gen.ts";
 import { harnessConfigDir, containerWorkdir, repoConfigFile } from "./paths.ts";
 import {
   dockerfileContentHash,
   imageRef,
-  materializeDockerfile,
+  writeGeneratedDockerfile,
   buildImageIfNeeded,
 } from "./image.ts";
 import {
@@ -45,8 +46,9 @@ async function runAgent(
   // 1. Resolve config (CLI > per-repo > global > defaults)
   const config = await resolveConfig(projectDir, cliOverrides);
 
-  // 2. Resolve preset
-  const preset = resolvePreset(config.defaultPreset, projectDir);
+  // 2. Resolve preset and generate Dockerfile
+  const preset = loadPreset(config.defaultPreset, projectDir);
+  const dockerfileContent = generateDockerfile(preset.units);
 
   // 3. UID/GID
   const { uid, gid } = getUidGid();
@@ -71,10 +73,10 @@ async function runAgent(
   syncClaudeSessionFiles(projectDir, harnessHome, workdir);
 
   // 6. Image build
-  const { path: dockerfilePath, cleanup: dockerfileCleanup } =
-    await materializeDockerfile(preset);
-  const hash = await dockerfileContentHash(preset.dockerfilePath);
+  const hash = dockerfileContentHash(dockerfileContent);
   const ref = imageRef(preset, projectDir, hash);
+  const { path: dockerfilePath, cleanup: dockerfileCleanup } =
+    await writeGeneratedDockerfile(dockerfileContent);
 
   try {
     await buildImageIfNeeded({
@@ -86,7 +88,7 @@ async function runAgent(
       rebuild: config.rebuild,
     });
   } finally {
-    await dockerfileCleanup?.();
+    await dockerfileCleanup();
   }
 
   // 7. SSH agent forwarding (may start a tunnel on macOS)

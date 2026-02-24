@@ -1,0 +1,6 @@
+{
+  "description": "OpenJDK 21",
+  "apt": [
+    "openjdk-21-jdk"
+  ]
+}

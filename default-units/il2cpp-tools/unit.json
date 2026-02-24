@@ -1,0 +1,24 @@
+{
+  "description": "IL2CPP / Unity reverse engineering tools",
+  "apt": [
+    "clang",
+    "llvm",
+    "strace",
+    "ltrace",
+    "patchelf",
+    "apktool",
+    "android-sdk-platform-tools",
+    "android-sdk-build-tools",
+    "radare2",
+    "binwalk",
+    "mono-complete"
+  ],
+  "pip": [
+    "capstone",
+    "pyyaml",
+    "frida-tools",
+    "UnityPy",
+    "lz4",
+    "tqdm"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "full-stack-playwright",
+  "units": [
+    { "name": "dev-utils" },
+    { "name": "node" },
+    { "name": "bun" },
+    { "name": "github-cli" },
+    { "name": "doc-utils" },
+    { "name": "playwright" }
+  ]
+}

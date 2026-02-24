@@ -33,6 +33,14 @@ export function repoPresetsDir(projectDir: string): string {
   return join(projectDir, ".sj", "presets");
 }
 
+export function userUnitsDir(): string {
+  return join(sjConfigDir(), "units");
+}
+
+export function repoUnitsDir(projectDir: string): string {
+  return join(projectDir, ".sj", "units");
+}
+
 export function containerWorkdir(projectName: string): string {
   return `/workdirs/${projectName}`;
 }

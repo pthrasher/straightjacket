@@ -2,15 +2,12 @@ import { createHash } from "node:crypto";
 import { basename, dirname, join } from "node:path";
 import { mkdtemp, writeFile, unlink, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import type { PresetSource } from "./types.ts";
+import type { ResolvedPreset } from "./types.ts";
 
 /**
- * SHA-256 hash of Dockerfile content, truncated to 12 hex chars.
+ * SHA-256 hash of Dockerfile content string, truncated to 12 hex chars.
  */
-export async function dockerfileContentHash(
-  dockerfilePath: string,
-): Promise<string> {
-  const content = await Bun.file(dockerfilePath).text();
+export function dockerfileContentHash(content: string): string {
   return createHash("sha256").update(content).digest("hex").slice(0, 12);
 }
 
@@ -20,7 +17,7 @@ export async function dockerfileContentHash(
  * - Per-repo presets: sj-<parent-dir>-<project-dir>-<preset-name>:<hash>
  */
 export function imageRef(
-  preset: PresetSource,
+  preset: ResolvedPreset,
   projectDir: string,
   hash: string,
 ): string {
@@ -33,32 +30,26 @@ export function imageRef(
 }
 
 /**
- * Materialize a Dockerfile to a real filesystem path that podman can read.
- * For built-in presets in compiled binary, the import path is a $bunfs/ virtual
- * path that podman cannot access — we write the content to a temp file.
- * For non-built-in presets, the path is already a real filesystem path.
+ * Write a generated Dockerfile to a temp directory.
+ * Returns the path and a cleanup function.
  */
-export async function materializeDockerfile(
-  preset: PresetSource,
-): Promise<{ path: string; cleanup: (() => Promise<void>) | null }> {
-  if (preset.origin === "built-in") {
-    const content = await Bun.file(preset.dockerfilePath).text();
-    const tmpDir = await mkdtemp(join(tmpdir(), "sj-dockerfile-"));
-    const tmpPath = join(tmpDir, "Dockerfile");
-    await writeFile(tmpPath, content);
-    return {
-      path: tmpPath,
-      cleanup: async () => {
-        try {
-          await unlink(tmpPath);
-          await rmdir(tmpDir);
-        } catch {
-          // Best-effort cleanup
-        }
-      },
-    };
-  }
-  return { path: preset.dockerfilePath, cleanup: null };
+export async function writeGeneratedDockerfile(
+  content: string,
+): Promise<{ path: string; cleanup: () => Promise<void> }> {
+  const tmpDir = await mkdtemp(join(tmpdir(), "sj-dockerfile-"));
+  const tmpPath = join(tmpDir, "Dockerfile");
+  await writeFile(tmpPath, content);
+  return {
+    path: tmpPath,
+    cleanup: async () => {
+      try {
+        await unlink(tmpPath);
+        await rmdir(tmpDir);
+      } catch {
+        // Best-effort cleanup
+      }
+    },
+  };
 }
 
 /**

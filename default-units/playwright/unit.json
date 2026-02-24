@@ -1,0 +1,9 @@
+{
+  "description": "Playwright with Chromium browser",
+  "pip": [
+    "playwright"
+  ],
+  "requires": [
+    "node"
+  ]
+}

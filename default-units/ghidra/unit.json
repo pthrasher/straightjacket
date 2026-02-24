@@ -1,0 +1,12 @@
+{
+  "description": "Ghidra reverse engineering framework (built from source)",
+  "args": {
+    "version": {
+      "description": "Ghidra version to build",
+      "default": "12.0.2"
+    }
+  },
+  "requires": [
+    "java"
+  ]
+}

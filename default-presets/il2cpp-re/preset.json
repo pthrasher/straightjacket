@@ -1,0 +1,14 @@
+{
+  "name": "il2cpp-re",
+  "units": [
+    { "name": "dev-utils" },
+    { "name": "node", "args": { "version": "20" } },
+    { "name": "github-cli" },
+    { "name": "java" },
+    { "name": "dotnet" },
+    { "name": "rust" },
+    { "name": "ghidra" },
+    { "name": "jadx" },
+    { "name": "il2cpp-tools" }
+  ]
+}

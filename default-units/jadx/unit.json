@@ -1,0 +1,9 @@
+{
+  "description": "JADX — Dex to Java decompiler",
+  "args": {
+    "version": {
+      "description": "JADX release version",
+      "default": "1.5.3"
+    }
+  }
+}

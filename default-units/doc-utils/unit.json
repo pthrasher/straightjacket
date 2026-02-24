@@ -1,0 +1,39 @@
+{
+  "description": "Document processing tools (PDF, Office, HTML, data)",
+  "apt": [
+    "pandoc",
+    "poppler-utils",
+    "ghostscript",
+    "qpdf",
+    "tesseract-ocr",
+    "tesseract-ocr-eng",
+    "imagemagick"
+  ],
+  "pip": [
+    "openpyxl",
+    "xlsxwriter",
+    "python-docx",
+    "python-pptx",
+    "pypdf",
+    "reportlab",
+    "pdfplumber",
+    "ocrmypdf",
+    "pandas",
+    "matplotlib",
+    "Pillow",
+    "beautifulsoup4",
+    "lxml",
+    "requests",
+    "httpx",
+    "html2text",
+    "markdownify",
+    "trafilatura",
+    "readability-lxml",
+    "pyyaml",
+    "yq",
+    "csvkit",
+    "python-magic",
+    "tqdm",
+    "lz4"
+  ]
+}

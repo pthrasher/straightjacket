@@ -1,0 +1,19 @@
+{
+  "description": "Node.js via NodeSource",
+  "apt": [
+    "nodejs"
+  ],
+  "aptRepos": [
+    {
+      "name": "nodesource",
+      "gpgKeyUrl": "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key",
+      "sourceLine": "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${UNIT_NODE_VERSION}.x nodistro main"
+    }
+  ],
+  "args": {
+    "version": {
+      "description": "Node.js major version",
+      "default": "24"
+    }
+  }
+}

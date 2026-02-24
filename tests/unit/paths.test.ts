@@ -5,8 +5,10 @@ import {
   sjGlobalConfigFile,
   harnessConfigDir,
   userPresetsDir,
+  userUnitsDir,
   repoConfigFile,
   repoPresetsDir,
+  repoUnitsDir,
   containerWorkdir,
 } from "../../src/paths.ts";
 
@@ -123,6 +125,31 @@ describe("repoPresetsDir", () => {
   test("returns <project>/.sj/presets", () => {
     expect(repoPresetsDir("/home/user/my-project")).toBe(
       "/home/user/my-project/.sj/presets",
+    );
+  });
+});
+
+describe("userUnitsDir", () => {
+  const original = process.env.XDG_CONFIG_HOME;
+
+  afterEach(() => {
+    if (original !== undefined) {
+      process.env.XDG_CONFIG_HOME = original;
+    } else {
+      delete process.env.XDG_CONFIG_HOME;
+    }
+  });
+
+  test("returns <xdg>/sj/units", () => {
+    process.env.XDG_CONFIG_HOME = "/custom/config";
+    expect(userUnitsDir()).toBe("/custom/config/sj/units");
+  });
+});
+
+describe("repoUnitsDir", () => {
+  test("returns <project>/.sj/units", () => {
+    expect(repoUnitsDir("/home/user/my-project")).toBe(
+      "/home/user/my-project/.sj/units",
     );
   });
 });
