@@ -1,7 +1,6 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
-  base: "/straightjacket/",
   title: "Straight Jacket",
   description:
     "Run AI agents in sandboxed containers. No footguns.",
