@@ -4,8 +4,16 @@
 set -e
 
 REPO="pthrasher/straightjacket"
-INSTALL_DIR="${SJ_INSTALL_DIR:-/usr/local/bin}"
 BINARY="sj"
+
+# Determine install directory
+if [ -n "$SJ_INSTALL_DIR" ]; then
+  INSTALL_DIR="$SJ_INSTALL_DIR"
+elif echo ":$PATH:" | grep -q ":$HOME/.local/bin:"; then
+  INSTALL_DIR="$HOME/.local/bin"
+else
+  INSTALL_DIR="/usr/local/bin"
+fi
 
 # Detect OS
 OS="$(uname -s)"
@@ -53,6 +61,7 @@ curl -fsSL -o "$TMP" "$URL"
 chmod +x "$TMP"
 
 # Install
+mkdir -p "$INSTALL_DIR" 2>/dev/null || true
 if [ -w "$INSTALL_DIR" ]; then
   mv "$TMP" "${INSTALL_DIR}/${BINARY}"
 else
