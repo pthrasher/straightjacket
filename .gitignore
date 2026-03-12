@@ -1,8 +1,9 @@
 sandbox/
 node_modules/
-bun.lock
 dist/
 build/
 *.bun-build
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+extract-apple-secrets.sh
+apple-secrets.env
