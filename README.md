@@ -2,7 +2,7 @@
 
 **Run AI agents in sandboxed containers. No footguns.**
 
-Straight Jacket (`sj`) is a CLI that launches [Claude Code](https://claude.ai/code), [Codex](https://github.com/openai/codex), or a plain shell inside purpose-built Podman containers — with your credentials, SSH keys, git config, and project files ready to go. One command, zero manual setup.
+Straight Jacket (`sj`) lets you run [Claude Code](https://claude.ai/code), [Codex](https://github.com/openai/codex), and other AI agents in full autonomous mode — no permission prompts, no babysitting — inside hardened Podman containers where they can't touch your host system. Your credentials, SSH keys, git config, and project files are forwarded automatically. One command, zero manual setup.
 
 ```bash
 # Launch Claude Code against the current repo
@@ -25,6 +25,7 @@ AI coding agents are powerful — and dangerous. They install packages, modify s
 
 Straight Jacket fixes this by making containerized agent workflows **trivially easy**:
 
+- **Unattended agents, safely.** Agents run in full bypass-permissions mode — no confirmation prompts, no interruptions — because the container *is* the sandbox. Let them work autonomously without worrying about what they'll do to your system.[^1]
 - **One binary, one command.** `sj claude` and you're coding. No Dockerfiles to write, no volume mounts to remember, no environment variables to juggle.
 - **Composable presets.** Mix and match units (Node, Rust, Playwright, Ghidra, etc.) to build exactly the environment your project needs.
 - **Persistent agent state.** Agent config, caches, shell history, and installed tools survive across sessions via sandboxed home directories.
@@ -38,8 +39,7 @@ Straight Jacket fixes this by making containerized agent workflows **trivially e
 
 ### Prerequisites
 
-- [Podman](https://podman.io/) (rootless mode recommended)
-- An `ANTHROPIC_API_KEY` (for Claude Code) or `OPENAI_API_KEY` (for Codex)
+- [Podman](https://podman.io/) (rootless mode recommended if you want ssh-agent forwarding)
 
 ### From Source
 
@@ -91,9 +91,9 @@ A **unit** is a reusable component — a set of packages, Dockerfile snippets, P
 ```
 ┌─────────────────────────────────────────────────┐
 │  Preset: full-stack                             │
-│  ┌───────────┐ ┌──────┐ ┌─────┐ ┌───────────┐  │
-│  │ dev-utils │ │ node │ │ bun │ │ github-cli│  │
-│  └───────────┘ └──────┘ └─────┘ └───────────┘  │
+│  ┌───────────┐ ┌──────┐ ┌─────┐ ┌───────────┐   │
+│  │ dev-utils │ │ node │ │ bun │ │ github-cli│   │
+│  └───────────┘ └──────┘ └─────┘ └───────────┘   │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -101,30 +101,30 @@ Straight Jacket generates a multi-stage Dockerfile from the preset's units, buil
 
 ### Built-in Presets
 
-| Preset | Units | Use Case |
-|--------|-------|----------|
-| **full-stack** | dev-utils, node, bun, github-cli, doc-utils | Web apps, JS/TS projects |
-| **full-stack-playwright** | full-stack + playwright | E2E testing, browser automation |
-| **rust-wasm** | dev-utils, node, rust, wasm, github-cli | WebAssembly development |
-| **il2cpp-re** | dev-utils, node, github-cli, java, dotnet, rust, ghidra, jadx, il2cpp-tools | Reverse engineering |
+| Preset                    | Units                                                                       | Use Case                        |
+| ------------------------- | --------------------------------------------------------------------------- | ------------------------------- |
+| **full-stack**            | dev-utils, node, bun, github-cli, doc-utils                                 | Web apps, JS/TS projects        |
+| **full-stack-playwright** | full-stack + playwright                                                     | E2E testing, browser automation |
+| **rust-wasm**             | dev-utils, node, rust, wasm, github-cli                                     | WebAssembly development         |
+| **il2cpp-re**             | dev-utils, node, github-cli, java, dotnet, rust, ghidra, jadx, il2cpp-tools | Reverse engineering             |
 
 ### Built-in Units
 
-| Unit | What It Provides |
-|------|------------------|
-| **dev-utils** | git, build-essential, zsh, ripgrep, jq, fd, bat, tree, and 30+ essential dev tools |
-| **node** | Node.js (configurable version, default: 24) |
-| **bun** | Bun JavaScript runtime |
-| **rust** | Rust via rustup (configurable version) |
-| **wasm** | Binaryen, wasmtime, wasm-tools |
-| **github-cli** | GitHub CLI (`gh`) |
-| **doc-utils** | pandoc, PDF tools, OCR, document processing |
-| **playwright** | Playwright + Chromium for browser automation |
-| **java** | OpenJDK 21 |
-| **dotnet** | .NET SDK 8.0 + ILSpy CLI |
-| **ghidra** | Ghidra reverse engineering framework (multi-stage build) |
-| **jadx** | Dex-to-Java decompiler |
-| **il2cpp-tools** | IL2CPP/Unity reverse engineering toolkit |
+| Unit             | What It Provides                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| **dev-utils**    | git, build-essential, zsh, ripgrep, jq, fd, bat, tree, and 30+ essential dev tools |
+| **node**         | Node.js (configurable version, default: 24)                                        |
+| **bun**          | Bun JavaScript runtime                                                             |
+| **rust**         | Rust via rustup (configurable version)                                             |
+| **wasm**         | Binaryen, wasmtime, wasm-tools                                                     |
+| **github-cli**   | GitHub CLI (`gh`)                                                                  |
+| **doc-utils**    | pandoc, PDF tools, OCR, document processing                                        |
+| **playwright**   | Playwright + Chromium for browser automation                                       |
+| **java**         | OpenJDK 21                                                                         |
+| **dotnet**       | .NET SDK 8.0 + ILSpy CLI                                                           |
+| **ghidra**       | Ghidra reverse engineering framework (multi-stage build)                           |
+| **jadx**         | Dex-to-Java decompiler                                                             |
+| **il2cpp-tools** | IL2CPP/Unity reverse engineering toolkit                                           |
 
 ### Custom Presets
 
@@ -195,16 +195,16 @@ This creates `.sj/config.json` in your project root. Override any setting per-pr
 
 ### Config Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `defaultAgent` | `"claude"` | Agent to launch with bare `sj` |
-| `defaultPreset` | `"full-stack"` | Preset to use when not specified |
-| `autoUpdate` | `false` | Update agent binaries before each launch |
-| `gitConfigSync` | `true` | Sync host git config into the container |
-| `sshForwarding` | `false` | Forward SSH agent for key-based auth and signing |
-| `githubCli` | `false` | Prompt for `gh` auth if not authenticated |
-| `codexConfigSync` | `false` | Sync Codex config and sessions |
-| `preRunScripts` | `[]` | Shell scripts to run before agent launch |
+| Option            | Default        | Description                                      |
+| ----------------- | -------------- | ------------------------------------------------ |
+| `defaultAgent`    | `"claude"`     | Agent to launch with bare `sj`                   |
+| `defaultPreset`   | `"full-stack"` | Preset to use when not specified                 |
+| `autoUpdate`      | `false`        | Update agent binaries before each launch         |
+| `gitConfigSync`   | `true`         | Sync host git config into the container          |
+| `sshForwarding`   | `false`        | Forward SSH agent for key-based auth and signing |
+| `githubCli`       | `false`        | Prompt for `gh` auth if not authenticated        |
+| `codexConfigSync` | `false`        | Sync Codex config and sessions                   |
+| `preRunScripts`   | `[]`           | Shell scripts to run before agent launch         |
 
 ---
 
@@ -262,3 +262,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). We welcome contributions — and we have
 ## License
 
 [MIT](LICENSE)
+
+---
+
+[^1]: **A container is not a magic shield.** Straight Jacket prevents agents from trashing your host system or accessing files outside your project — but your project directory is mounted read-write. A rogue agent can still delete your entire codebase, overwrite files, or make a mess of your repo. Don't pass production credentials, cloud admin keys, or secrets you wouldn't want an intern to have. Straight Jacket constrains the blast radius; it doesn't eliminate it. Use version control. Review diffs. Stay sharp.
