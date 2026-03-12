@@ -145,10 +145,26 @@ jobs:
         working-directory: artifacts
         run: sha256sum sj-* > checksums.txt
 
+      - name: Extract version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          # Extract the section for this version, falling back to a link
+          TAG="${{ steps.version.outputs.tag }}"
+          NOTES=$(sed -n "/^## \[${TAG#v}\]/,/^## \[/p" CHANGELOG.md | sed '$d')
+          if [ -z "$NOTES" ]; then
+            NOTES="See [CHANGELOG.md](https://github.com/pthrasher/straightjacket/blob/${TAG}/CHANGELOG.md) for release notes."
+          fi
+          # Write to file to preserve newlines
+          echo "$NOTES" > $RUNNER_TEMP/release-notes.md
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/release-notes.md
           files: |
             artifacts/sj-linux-x64
             artifacts/sj-linux-arm64
