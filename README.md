@@ -41,16 +41,21 @@ Straight Jacket fixes this by making containerized agent workflows **trivially e
 
 - [Podman](https://podman.io/) (rootless mode recommended if you want ssh-agent forwarding)
 
+### Quick Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pthrasher/straightjacket/master/install.sh | sh
+```
+
+This detects your OS and architecture, downloads the latest release binary, and installs it to `/usr/local/bin`. Set `SJ_INSTALL_DIR` to change the install location, or `SJ_VERSION` to pin a specific version.
+
 ### From Source
 
 ```bash
-# Clone and build
-git clone https://github.com/anthropics/straightjacket.git
+git clone https://github.com/pthrasher/straightjacket.git
 cd straightjacket
 bun install
 bun run build
-
-# The binary is at build/sj — copy it to your PATH
 cp build/sj /usr/local/bin/sj
 ```
 

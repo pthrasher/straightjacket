@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: bun-linux-x64
+            artifact: sj-linux-x64
+          - target: bun-linux-arm64
+            artifact: sj-linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun build --compile --target=${{ matrix.target }} src/index.ts --outfile ${{ matrix.artifact }} --external chokidar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  build-macos:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: bun-darwin-arm64
+            artifact: sj-darwin-arm64
+          - target: bun-darwin-x64
+            artifact: sj-darwin-x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun build --compile --target=${{ matrix.target }} src/index.ts --outfile ${{ matrix.artifact }} --external chokidar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  sign-macos:
+    needs: build-macos
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        artifact: [sj-darwin-arm64, sj-darwin-x64]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+
+      - name: Import signing certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 16)
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 900 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          # Allow codesign to access the keychain
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
+      - name: Sign binary
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          chmod +x ${{ matrix.artifact }}
+          codesign --force --options runtime --sign "$APPLE_SIGNING_IDENTITY" ${{ matrix.artifact }}
+          codesign --verify --verbose ${{ matrix.artifact }}
+
+      - name: Notarize binary
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_NOTARIZATION_PASSWORD: ${{ secrets.APPLE_NOTARIZATION_PASSWORD }}
+        run: |
+          # Notarization requires a zip or dmg
+          ZIP_PATH=$RUNNER_TEMP/${{ matrix.artifact }}.zip
+          ditto -c -k --keepParent ${{ matrix.artifact }} "$ZIP_PATH"
+
+          xcrun notarytool submit "$ZIP_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_NOTARIZATION_PASSWORD" \
+            --wait
+
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/signing.keychain-db || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-signed
+          path: ${{ matrix.artifact }}
+          overwrite: true
+
+  release:
+    needs: [build-linux, sign-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sj-linux-x64
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: sj-linux-arm64
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: sj-darwin-arm64-signed
+          path: artifacts/
+      - uses: actions/download-artifact@v4
+        with:
+          name: sj-darwin-x64-signed
+          path: artifacts/
+
+      - name: Generate checksums
+        working-directory: artifacts
+        run: sha256sum sj-* > checksums.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/sj-linux-x64
+            artifacts/sj-linux-arm64
+            artifacts/sj-darwin-arm64
+            artifacts/sj-darwin-x64
+            artifacts/checksums.txt

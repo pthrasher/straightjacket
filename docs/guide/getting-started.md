@@ -7,6 +7,19 @@
 
 ## Installation
 
+### Quick Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pthrasher/straightjacket/master/install.sh | sh
+```
+
+Detects your OS and architecture, downloads the latest release binary, and installs to `/usr/local/bin`.
+
+| Environment Variable | Description |
+| --- | --- |
+| `SJ_INSTALL_DIR` | Custom install directory (default: `/usr/local/bin`) |
+| `SJ_VERSION` | Pin a specific version (e.g., `v0.1.0`) |
+
 ### From Source
 
 ```bash
@@ -14,8 +27,6 @@ git clone https://github.com/pthrasher/straightjacket.git
 cd straightjacket
 bun install
 bun run build
-
-# The binary is at build/sj — copy it to your PATH
 cp build/sj /usr/local/bin/sj
 ```
 
