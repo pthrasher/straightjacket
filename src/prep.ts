@@ -20,7 +20,6 @@ export interface SshForwardingResult {
 /**
  * Create the harness-config directory for an agent if it doesn't exist.
  * Ensure XDG subdirectories exist inside it.
- * Matches prep.sh step 1.
  */
 export function bootstrapHarnessConfig(harnessHome: string): void {
   if (!existsSync(harnessHome)) {
@@ -41,7 +40,6 @@ export function bootstrapHarnessConfig(harnessHome: string): void {
 /**
  * Sync host git config into the harness-config directory.
  * One-way copy: host overwrites the sandboxed copy.
- * Matches prep.sh step 2.
  */
 export function syncGitConfig(harnessHome: string): void {
   const hostHome = homedir();
@@ -329,7 +327,7 @@ export function syncCodexConfig(harnessHome: string): void {
 
 /**
  * Capture TTY-related environment variables as podman --env args.
- * Matches prep.sh step 4.
+ * Returns --env flags for podman run.
  */
 export function captureTtyEnvArgs(): string[] {
   const args: string[] = [];
@@ -520,7 +518,7 @@ async function setupMacOsSshTunnel(
 
 /**
  * Forward API key environment variables as podman --env args.
- * Matches prep.sh step 6.
+ * Returns --env flags for podman run.
  */
 export function credentialEnvArgs(): string[] {
   const args: string[] = [];

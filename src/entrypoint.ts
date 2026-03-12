@@ -21,7 +21,7 @@ interface EntrypointOptions {
 }
 
 /**
- * Generate entrypoint shell script matching default-presets/entrypoint.sh.
+ * Generate the entrypoint shell script for a container run.
  * Parameterized by agent, config, and resolved units.
  */
 export function generateEntrypoint(opts: EntrypointOptions): string {

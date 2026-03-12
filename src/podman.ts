@@ -14,7 +14,7 @@ export interface PodmanRunOpts {
 
 /**
  * Assemble the full podman run argument list.
- * Matches prep.sh lines 100-114.
+ * Returns the full argument list for `podman run`.
  */
 export function buildPodmanRunArgs(opts: PodmanRunOpts): string[] {
   return [
