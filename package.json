@@ -10,10 +10,14 @@
     "install-local": "bash scripts/mac-install.sh",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "test:integration": "SJ_INTEGRATION_TESTS=1 bun test"
+    "test:integration": "SJ_INTEGRATION_TESTS=1 bun test",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "vitepress": "^1.6.4"
   },
   "peerDependencies": {
     "typescript": "^5"
