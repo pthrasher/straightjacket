@@ -6,7 +6,7 @@ Run `git tag --sort=-v:refname` to find the most recent version tag (tags matchi
 
 Store the last tag (or the initial commit if none) for use in the next steps.
 
-## Step 2: Gather changes
+## Step 2: Gather and summarize changes
 
 Get the full list of commits since the last release:
 
@@ -16,36 +16,50 @@ git log <last-tag>..HEAD --oneline
 
 If there is no previous tag, use `git log --oneline`.
 
-Then use **subagents in parallel** to analyze the changes:
+Count the number of commits. Then spawn **haiku subagents** to summarize the changes:
 
-1. **Subagent 1 — Commit analysis**: Read through all commit messages and the actual diffs (`git diff <last-tag>..HEAD`) to produce a detailed summary of what changed, grouped by category (Added, Changed, Fixed, Removed, etc. per Keep a Changelog format).
+- If there are **≤ 20 commits**, use a single haiku subagent.
+- If there are **> 20 commits**, split them into batches of ~15-20 and spawn **multiple haiku subagents in parallel**, one per batch.
 
-2. **Subagent 2 — Version bump recommendation**: Review the commit messages and diffs to determine the appropriate semver bump:
-   - **major**: breaking changes to CLI interface, config format, or preset/unit contracts
-   - **minor**: new features, new presets/units, new config options, new commands
-   - **patch**: bug fixes, documentation, internal refactors, dependency updates
+Each haiku subagent should:
+- Read the commit messages and diffs for its assigned batch (use `git show <hash>` for each commit, or `git log --patch <range>`)
+- Produce a summary of what changed, grouped by Keep a Changelog categories: Added, Changed, Fixed, Removed, Security, Deprecated
+- Each entry should be a concise, user-facing description — not raw commit messages
 
-   If the current version is `0.x.y`, be more liberal with minor bumps (breaking changes can go in minor during 0.x development).
+Give each subagent the specific commit hashes or range it is responsible for. Include the instruction to read the actual diffs, not just commit messages — commit messages alone are not sufficient.
 
-Wait for both subagents to complete.
+Wait for **all** haiku subagents to complete before proceeding.
 
-## Step 3: Confirm with the user
+## Step 3: Determine version bump
+
+After all summaries are collected, determine the appropriate semver bump. You (Opus) should make this determination yourself by reviewing all the summaries from step 2. Do NOT delegate this to a subagent.
+
+Apply these rules:
+- **major**: breaking changes to CLI interface, config format, or preset/unit contracts
+- **minor**: new features, new presets/units, new config options, new commands
+- **patch**: bug fixes, documentation, internal refactors, dependency updates
+
+If the current version is `0.x.y`, be more liberal with minor bumps (breaking changes can go in minor during 0.x development).
+
+Read `package.json` to get the current version. If there is no `version` field, start at `0.1.0`.
+
+## Step 4: Confirm with the user
 
 Present the following to the user and ask for confirmation before proceeding:
 
 - The recommended version bump and new version number
-- The changelog entry that will be written
-- The list of commits being included
+- The full changelog entry that will be written (formatted in Keep a Changelog style)
+- The number of commits being included
 
 Wait for explicit user approval. If the user wants to adjust the version or changelog, incorporate their feedback.
 
-## Step 4: Update CHANGELOG.md
+## Step 5: Update CHANGELOG.md
 
 Read the existing `CHANGELOG.md`.
 
 - Rename the `[Unreleased]` section to `[<new-version>]` with today's date in ISO format (YYYY-MM-DD)
 - Add a fresh empty `[Unreleased]` section above it
-- Write the categorized changes into the version section
+- Merge and deduplicate the categorized changes from all subagent summaries into the version section
 
 The format must follow Keep a Changelog:
 
@@ -67,13 +81,13 @@ The format must follow Keep a Changelog:
 - ...
 ```
 
-Only include categories that have entries. Each entry should be a concise, user-facing description — not raw commit messages.
+Only include categories that have entries.
 
-## Step 5: Update package.json
+## Step 6: Update package.json
 
-Update the `version` field in `package.json` to the new version number (without the `v` prefix).
+Update the `version` field in `package.json` to the new version number (without the `v` prefix). Add the field if it doesn't exist.
 
-## Step 6: Commit, tag, and push
+## Step 7: Commit, tag, and push
 
 1. Stage `CHANGELOG.md` and `package.json`
 2. Commit with message: `release: v<version>`
