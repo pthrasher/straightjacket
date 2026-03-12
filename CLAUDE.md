@@ -47,7 +47,6 @@ default-units/                # Built-in unit definitions (JSON + Dockerfile sni
   ghidra/
   jadx/
   il2cpp-tools/
-sandbox/                      # Legacy reference implementation (gitignored, not part of the build)
 ```
 
 ## Key Architecture Decisions
