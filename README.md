@@ -268,6 +268,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). We welcome contributions — and we have
 
 [MIT](LICENSE)
 
+## Disclaimer
+
+Straight Jacket is provided as-is, with no warranties of any kind. This software runs AI agents that execute arbitrary code, install packages, and modify files autonomously. While Straight Jacket uses container isolation to limit the blast radius, **no sandbox is perfect** — and your project directory is mounted read-write by design.
+
+By using this software, you accept full responsibility for any consequences, including but not limited to: data loss, corrupted repositories, unintended code changes, leaked credentials, unexpected API charges, or any other damage to your systems or data. The authors and contributors are not liable for any harm resulting from the use of this tool.
+
+Use version control. Review diffs. Don't pass secrets you can't afford to lose. You have been warned.
+
 ---
 
 [^1]: **A container is not a magic shield.** Straight Jacket prevents agents from trashing your host system or accessing files outside your project — but your project directory is mounted read-write. A rogue agent can still delete your entire codebase, overwrite files, or make a mess of your repo. Don't pass production credentials, cloud admin keys, or secrets you wouldn't want an intern to have. Straight Jacket constrains the blast radius; it doesn't eliminate it. Use version control. Review diffs. Stay sharp.
