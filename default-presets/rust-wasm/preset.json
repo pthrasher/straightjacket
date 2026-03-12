@@ -1,0 +1,10 @@
+{
+  "name": "rust-wasm",
+  "units": [
+    { "name": "dev-utils" },
+    { "name": "node" },
+    { "name": "rust" },
+    { "name": "wasm" },
+    { "name": "github-cli" }
+  ]
+}

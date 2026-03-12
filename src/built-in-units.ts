@@ -14,6 +14,8 @@ import devUtilsPostInstall from "../default-units/dev-utils/post-install.Dockerf
 // --- node ---
 import _nodeManifest from "../default-units/node/unit.json" with { type: "file" };
 const nodeManifest = _nodeManifest as unknown as string;
+// @ts-expect-error — Bun-specific import attribute
+import nodePostInstall from "../default-units/node/post-install.Dockerfile" with { type: "file" };
 
 // --- bun ---
 import _bunManifest from "../default-units/bun/unit.json" with { type: "file" };
@@ -71,6 +73,12 @@ import jadxBuild from "../default-units/jadx/build.Dockerfile" with { type: "fil
 // @ts-expect-error — Bun-specific import attribute
 import jadxPostInstall from "../default-units/jadx/post-install.Dockerfile" with { type: "file" };
 
+// --- wasm ---
+import _wasmManifest from "../default-units/wasm/unit.json" with { type: "file" };
+const wasmManifest = _wasmManifest as unknown as string;
+// @ts-expect-error — Bun-specific import attribute
+import wasmPostInstall from "../default-units/wasm/post-install.Dockerfile" with { type: "file" };
+
 // --- il2cpp-tools ---
 import _il2cppToolsManifest from "../default-units/il2cpp-tools/unit.json" with { type: "file" };
 const il2cppToolsManifest = _il2cppToolsManifest as unknown as string;
@@ -84,7 +92,7 @@ export interface BuiltInUnitFiles {
 
 export const BUILT_IN_UNITS: Record<string, BuiltInUnitFiles> = {
   "dev-utils": { manifest: devUtilsManifest, postInstall: devUtilsPostInstall },
-  "node": { manifest: nodeManifest },
+  "node": { manifest: nodeManifest, postInstall: nodePostInstall },
   "bun": { manifest: bunManifest, postInstall: bunPostInstall },
   "github-cli": { manifest: githubCliManifest },
   "doc-utils": { manifest: docUtilsManifest },
@@ -94,5 +102,6 @@ export const BUILT_IN_UNITS: Record<string, BuiltInUnitFiles> = {
   "rust": { manifest: rustManifest, postInstall: rustPostInstall },
   "ghidra": { manifest: ghidraManifest, build: ghidraBuild, postInstall: ghidraPostInstall },
   "jadx": { manifest: jadxManifest, build: jadxBuild, postInstall: jadxPostInstall },
+  "wasm": { manifest: wasmManifest, postInstall: wasmPostInstall },
   "il2cpp-tools": { manifest: il2cppToolsManifest },
 };

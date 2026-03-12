@@ -1,0 +1,16 @@
+{
+  "description": "WebAssembly tooling: wasm targets, wasmtime runtime, and wasm-opt",
+  "apt": [
+    "binaryen"
+  ],
+  "pathDirs": ["/opt/wasmtime/bin"],
+  "args": {
+    "wasmtime-version": {
+      "description": "Wasmtime release version",
+      "default": "latest"
+    }
+  },
+  "requires": [
+    "rust"
+  ]
+}
