@@ -58,6 +58,11 @@ default-units/                # Built-in unit definitions (JSON + Dockerfile sni
 - **Generated entrypoint:** The entrypoint script is generated at runtime by `src/entrypoint.ts`, not hand-maintained. It assembles PATH from unit `pathDirs`, handles auth flows, and launches the agent.
 - **Content-hash tagging:** Images are tagged with a SHA-256 hash of the generated Dockerfile, so repos sharing the same preset share the same image.
 
+## Git Workflow
+
+- **Never push.** Do not run `git push` or `git push --tags` unless explicitly asked.
+- **Never commit automatically.** Wait for the user to say when changes should be committed. Do not commit after completing a task unless asked.
+
 ## Communication Style
 
 - **Follow the user's lead.** If I ask about an alternative approach and you've already stated your preference, do not repeat it. Assume I heard you and have a reason for exploring the alternative. Be curious about that reason — ask clarifying questions instead of restating your position.

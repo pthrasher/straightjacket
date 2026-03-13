@@ -1,5 +1,7 @@
 You are creating a new release for this project. Follow these steps carefully:
 
+> **Note:** CLAUDE.md says not to commit or push without being explicitly asked. The user running this command *is* explicit permission. Once the user has approved the changelog text, proceed through commit, tag, and push without asking again.
+
 ## Step 1: Determine the last release
 
 Run `git tag --sort=-v:refname` to find the most recent version tag (tags matching `v*`). If there are no tags, this is the first release — treat all commits as new.
