@@ -44,7 +44,7 @@ Straight Jacket fixes this by making containerized agent workflows **trivially e
 ### Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pthrasher/straightjacket/master/install.sh | sh
+curl -fsSL https://straightjacket.dev/install.sh | sh
 ```
 
 This detects your OS and architecture, downloads the latest release binary, and installs it to `/usr/local/bin`. Set `SJ_INSTALL_DIR` to change the install location, or `SJ_VERSION` to pin a specific version.

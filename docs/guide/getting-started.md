@@ -10,7 +10,7 @@
 ### Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pthrasher/straightjacket/master/install.sh | sh
+curl -fsSL https://straightjacket.dev/install.sh | sh
 ```
 
 Detects your OS and architecture, downloads the latest release binary, and installs to `/usr/local/bin`.
