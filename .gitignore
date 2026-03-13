@@ -3,4 +3,5 @@ build/
 *.bun-build
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+docs/public/install.sh
 personal/
