@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-15
+
+### Added
+- Forward `CLAUDE_*` environment variables from host into containers, controlled by new `claudeEnvSync` config option (default: `true`)
+- Host install script on docs site at `straightjacket.dev/install.sh`
+
+### Changed
+- Update GitHub Actions to Node 24-compatible action versions (checkout v6, upload-artifact v7, download-artifact v8)
+- Update install script references from raw GitHub URL to `straightjacket.dev/install.sh`
+- Copy `install.sh` into docs at build time instead of checking in a duplicate
+
+### Fixed
+- Ensure `docs/public` directory exists before copying install script during docs build
+- Remove VitePress base path for custom domain deployment
+
 ## [2.0.0] - 2026-03-12
 
 ### Added
