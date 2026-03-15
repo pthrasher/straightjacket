@@ -26,6 +26,7 @@ import {
   captureTtyEnvArgs,
   setupSshForwarding,
   credentialEnvArgs,
+  claudeEnvArgs,
   getUidGid,
 } from "./prep.ts";
 import { buildPodmanRunArgs, execPodman } from "./podman.ts";
@@ -119,7 +120,10 @@ async function runAgent(
       agent: mode,
       sshArgs: sshForwarding.podmanArgs,
       ttyEnvs: captureTtyEnvArgs(),
-      credEnvs: credentialEnvArgs(),
+      credEnvs: [
+        ...credentialEnvArgs(),
+        ...(config.claudeEnvSync ? claudeEnvArgs() : []),
+      ],
     });
 
     const exitCode = await execPodman(args);

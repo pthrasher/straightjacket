@@ -535,6 +535,20 @@ export function credentialEnvArgs(): string[] {
 }
 
 /**
+ * Forward CLAUDE_* environment variables as podman --env args.
+ * Returns --env flags for podman run.
+ */
+export function claudeEnvArgs(): string[] {
+  const args: string[] = [];
+  for (const [key, val] of Object.entries(process.env)) {
+    if (key.startsWith("CLAUDE_") && val) {
+      args.push("--env", `${key}=${val}`);
+    }
+  }
+  return args;
+}
+
+/**
  * Get the current user's UID and GID.
  */
 export function getUidGid(): { uid: number; gid: number } {

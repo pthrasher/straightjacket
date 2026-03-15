@@ -10,6 +10,7 @@ export const CONFIG_DEFAULTS: SjConfig = {
   gitConfigSync: true,
   githubCli: false,
   sshForwarding: false,
+  claudeEnvSync: true,
   codexConfigSync: false,
   preRunScripts: [],
   rebuild: false,

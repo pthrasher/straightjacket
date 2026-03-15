@@ -60,6 +60,7 @@ export interface SjConfig {
   gitConfigSync: boolean;
   githubCli: boolean;
   sshForwarding: boolean;
+  claudeEnvSync: boolean;
   codexConfigSync: boolean;
   preRunScripts: string[];
   rebuild: boolean;
